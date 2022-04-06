@@ -93,11 +93,11 @@ class PSD:
 
         sig = sig.T
 
-        fr, psd_full = signal.welch(sig[0], fs=self.sr, nfft=self.n_fft)
+        fr, psd_full = signal.welch(sig[0], fs=self.sr, nperseg=75, nfft=self.n_fft)
         psd_full = np.expand_dims(psd_full.T, 0)
 
         for i in range(1, 8):
-            fr, psd_new = signal.welch(sig[i], fs=self.sr, nfft=self.n_fft)
+            fr, psd_new = signal.welch(sig[i], fs=self.sr, nperseg=75, nfft=self.n_fft)
             psd_new = np.expand_dims(psd_new.T, 0)
             psd_full = np.vstack((psd_full, psd_new))
 
@@ -105,7 +105,7 @@ class PSD:
         feat_list = [feat.T]
         feat_list.append(librosa.feature.delta(feat, order=1).T)
         feats = np.stack(feat_list)
-        feats = np.resize(feats, (2, 251, 8))
+        feats = np.resize(feats, (2, 76, 8))
         return feats
 
 
@@ -123,7 +123,7 @@ class STFT:
                          hop_length=self.hop_length,
                          )
         feats = np.dstack((S.real, S.imag))
-        feats = np.resize(feats, (8, 251, 52))
+        feats = np.resize(feats, (8, 76, 52))
         return feats
 
 class PSDNoDelta:
@@ -147,7 +147,7 @@ class PSDNoDelta:
         feat = psd_full
         feat_list = [feat.T]
         feat_list = np.expand_dims(feat_list, 0)
-        feats = np.resize(feat_list, (1, 251, 8))
+        feats = np.resize(feat_list, (1, 76, 8))
         return feats
 
 class NoFeatureExtraction:

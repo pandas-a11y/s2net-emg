@@ -12,20 +12,17 @@ from scipy import stats
 class EMGDataset(Dataset):
     def __init__(self, data_root, label_dct, mode, transform=None, max_nb_per_class=None):
         
-        assert mode in ["train", "valid", "test"], 'mode should be "train", "valid" or "test"' 
+        assert mode in ["train", "test"], 'mode should be "train" or "test"'
         
         self.filenames = []
         self.labels = []
         self.mode = mode
         self.transform = transform
         
-        
-        if self.mode == "train" or self.mode == "valid":
+        if self.mode == "train":
             testing_list = txt2list(os.path.join(data_root, "testing_list.txt"))
-            validation_list = txt2list(os.path.join(data_root, "validation_list.txt"))
         else:
             testing_list = []
-            validation_list = []
 
         
         for root, dirs, files in os.walk(data_root):
@@ -37,10 +34,9 @@ class EMGDataset(Dataset):
                 partial_path = '/'.join([command, filename])
                 
                 testing_file = (partial_path in testing_list)
-                validation_file = (partial_path in validation_list)
-                training_file = not testing_file and not validation_file
+                training_file = not testing_file
                 
-                if (self.mode == "test") or (self.mode=="train" and training_file) or (self.mode=="valid" and validation_file):
+                if (self.mode == "test") or (self.mode == "train" and training_file):
                     full_name = os.path.join(root, filename)
                     self.filenames.append(full_name)
                     self.labels.append(label)
@@ -92,11 +88,10 @@ class PSD:
         
     def __call__(self, sig):
 
-
-        fr, psd_full = signal.welch(sig[0], fs=self.sr, nfft=self.n_fft)
+        fr, psd_full = signal.welch(sig[0], fs=self.sr, nperseg=75, nfft=self.n_fft)
         psd_full = np.expand_dims(psd_full.T, 0)
         for i in range(1, 8):
-            fr, psd_new = signal.welch(sig[i], fs=self.sr, nfft=self.n_fft)
+            fr, psd_new = signal.welch(sig[i], fs=self.sr, nperseg=75, nfft=self.n_fft)
             psd_new = np.expand_dims(psd_new.T, 0)
         
             psd_full = np.vstack((psd_full, psd_new))
@@ -105,7 +100,7 @@ class PSD:
         feat_list = [feat.T]
         feat_list.append(librosa.feature.delta(feat, order=1).T)  
         feats = np.stack(feat_list)
-        feats = np.resize(feats, (2, 251, 8))
+        feats = np.resize(feats, (2, 76, 8))
         return feats
 
 
@@ -124,7 +119,7 @@ class STFT:
                         hop_length=self.hop_length,
                         )
         feats = np.dstack((S.real, S.imag))
-        feats = np.resize(feats, (8, 251, 52))
+        feats = np.resize(feats, (8, 76, 52))
         return feats
     
 class PSDNoDelta:
@@ -135,18 +130,18 @@ class PSDNoDelta:
 
     def __call__(self, sig):
 
-        fr, psd_full = signal.welch(sig[0], fs=self.sr, nfft=self.n_fft)
+        fr, psd_full = signal.welch(sig[0], fs=self.sr, nperseg=75,  nfft=self.n_fft)
         psd_full = np.expand_dims(psd_full.T, 0)
 
         for i in range(1, 8):
-            fr, psd_new = signal.welch(sig[i], fs=self.sr, nfft=self.n_fft)
+            fr, psd_new = signal.welch(sig[i], fs=self.sr, nperseg=75, nfft=self.n_fft)
             psd_new = np.expand_dims(psd_new.T, 0)
             psd_full = np.vstack((psd_full, psd_new))
 
         feat = psd_full
         feat_list = [feat.T]
         feat_list = np.expand_dims(feat_list, 0)
-        feats = np.resize(feat_list, (1, 251, 8))
+        feats = np.resize(feat_list, (1, 76, 8))
         return feats
 
 
