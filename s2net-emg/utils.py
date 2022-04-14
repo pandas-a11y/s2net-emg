@@ -20,7 +20,9 @@ def plot_spk_rec(spk_rec, idx):
     fig= plt.figure(figsize=(30,20),dpi=150)
     for i in range(nb_plt):
         plt.subplot(gs[i])
-        plt.imshow(spk_rec[idx[i]].T,cmap=plt.cm.gray_r, origin="lower", aspect='auto')
+        #plt.imshow(spk_rec[idx[i]].T,cmap=plt.cm.gray_r, origin="lower", aspect='auto')
+        plt.eventplot(spk_rec[idx[i]].T, lineoffsets=1, linelengths=0.1, colors='black')
+        #plt.show()
         if i==0:
             plt.xlabel("Time")
             plt.ylabel("Units")    
