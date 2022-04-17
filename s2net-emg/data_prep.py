@@ -2,8 +2,8 @@ import pandas
 import os
 
 dir_name = os.path.dirname(__file__)
-file_train = "1_raw_data_1.txt"
-file_test = "2_raw_data_1.txt"
+file_train = "1_raw_data_3.txt"
+file_test = "2_raw_data_3.txt"
 # open TRAIN file
 file_df = pandas.read_csv('unsplit_data/' + file_train, delimiter='\t', header=None,
                           names=['t', 'ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'ch6',
@@ -43,6 +43,26 @@ for i in range(1, 9):
         train_lst.writelines(fl_name + "\n")
 
         cut_df.to_csv(fl_loc, index=False)
+        nmb += 1
+        # data augmentation reverse
+        aug_rev_df = cut_df.iloc[::-1]
+
+        fl_name = "train_class_" + str(i) + '_' + str(nmb) + ".csv"
+        fl_loc = "data/train/" + str(i) + "/" + fl_name
+
+        train_lst.writelines(fl_name + "\n")
+
+        aug_rev_df.to_csv(fl_loc, index=False)
+        nmb += 1
+        # data augmentation shift
+        aug_sh_df = pandas.concat([filt_df.iloc[j + df_len//2:j + df_len], filt_df.iloc[j:j + df_len//2]])
+
+        fl_name = "train_class_" + str(i) + '_' + str(nmb) + ".csv"
+        fl_loc = "data/train/" + str(i) + "/" + fl_name
+
+        train_lst.writelines(fl_name + "\n")
+
+        aug_sh_df.to_csv(fl_loc, index=False)
         nmb += 1
     # split TEST set
     nmb = 0
