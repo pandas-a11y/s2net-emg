@@ -78,83 +78,65 @@ class EMGDataset(Dataset):
         return item, label
 
     
-class PSD:
+class FMD: # 0
+
+    def __call__(self, sig):
+        feats_fmd = np.vstack([np.expand_dims(signal.periodogram(i)[1]*1/2, 0) for i in sig])
+
+        feats = feats_fmd.T
+        feats = np.expand_dims(feats, 0)
+        return feats
+
+class MMDF: # 1
+
+    def __call__(self, sig):
+        feats_fmd = np.vstack([np.expand_dims(np.sqrt(signal.periodogram(i)[1])*np.sqrt(1/len(i)/2)*1/2, 0) for i in sig])
+
+        feats = feats_fmd.T
+        feats = np.expand_dims(feats, 0)
+        return feats
+
+class MAV: # 2
+
+    def __call__(self, sig):
+        feats_fmd = np.vstack(np.expand_dims([np.abs(i)*1/len(i) for i in sig], 0))
+
+        feats = feats_fmd.T
+        feats = np.expand_dims(feats, 0)
+        return feats
+
+class RMS: # 3
+
+    def __init__(self, window):
+        self.window = window
+
+    def __call__(self, sig):
+        sig2 = np.power(sig, 2)
+        window = np.ones(self.window) / float(self.window)
+        #feats = np.vstack([np.expand_dims(np.convolve(i, window, 'valid'), 0) for i in sig2])
+        #feats = np.expand_dims(feats, 2) # -1 = 8:141:1, 0 = 1,8,141
+        feats = np.vstack([np.expand_dims(np.convolve(i, window, 'valid'), 0) for i in sig])
+        feats = feats.T
+        feats = np.expand_dims(feats, 0)
+
+        return feats
     
-    def __init__(self, sr, n_fft):
-        
+class PSD: # 4
+
+    def __init__(self, sr, n_fft, window):
         self.sr = sr
         self.n_fft = n_fft
-        
-        
-    def __call__(self, sig):
+        self.nperseg = window
 
-        fr, psd_full = signal.welch(sig[0], fs=self.sr, nperseg=75, nfft=self.n_fft)
-        psd_full = np.expand_dims(psd_full.T, 0)
-        for i in range(1, 8):
-            fr, psd_new = signal.welch(sig[i], fs=self.sr, nperseg=75, nfft=self.n_fft)
-            psd_new = np.expand_dims(psd_new.T, 0)
-        
-            psd_full = np.vstack((psd_full, psd_new))
-    
-        feat = psd_full
-        feat_list = [feat.T]
-        feat_list.append(librosa.feature.delta(feat, order=1).T)  
-        feats = np.stack(feat_list)
-        feats = np.resize(feats, (2, 76, 8))
+    def __call__(self, sig):
+        feats = np.vstack([np.expand_dims(signal.welch(i, fs=self.sr, nperseg=self.nperseg,  nfft=self.n_fft)[1], 0) for i in sig])
+        feats = feats.T
+        feats = np.expand_dims(feats, 0)
         return feats
 
 
-class STFT:
-
-    def __init__(self, n_fft, hop_length):
-        self.n_fft = n_fft
-        self.hop_length = hop_length
-    
-
-    def __call__(self, sig):
- 
-
-        S = librosa.stft(y=sig,
-                        n_fft=self.n_fft,
-                        hop_length=self.hop_length,
-                        )
-        feats = np.dstack((S.real, S.imag))
-        feats = np.resize(feats, (8, 76, 52))
-        return feats
-    
-class PSDNoDelta:
-
-    def __init__(self, sr, n_fft):
-        self.sr = sr
-        self.n_fft = n_fft
-
-    def __call__(self, sig):
-
-        fr, psd_full = signal.welch(sig[0], fs=self.sr, nperseg=75,  nfft=self.n_fft)
-        psd_full = np.expand_dims(psd_full.T, 0)
-
-        for i in range(1, 8):
-            fr, psd_new = signal.welch(sig[i], fs=self.sr, nperseg=75, nfft=self.n_fft)
-            psd_new = np.expand_dims(psd_new.T, 0)
-            psd_full = np.vstack((psd_full, psd_new))
-
-        feat = psd_full
-        feat_list = [feat.T]
-        feat_list = np.expand_dims(feat_list, 0)
-        feats = np.resize(feat_list, (1, 76, 8))
-        return feats
 
 
-class NoFeatureExtraction:
-    
-    def __call__(self, sig):
-        sig = sig.T
-
-        sig = np.resize(sig, (500, 8))
-        sig = np.expand_dims(sig, 0)
-        return sig
-
-    
 class Rescale:
     
     def __call__(self, input):
